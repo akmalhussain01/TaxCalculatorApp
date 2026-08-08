@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: taxcalculator-pipeline
+spec:
+  workspaces:
+    - name: source
+
+  params:
+    - name: IMAGE
+      type: string
+      description: The target image to build and push
+
+  tasks:
+
+    - name: npminstall
+      taskRef:
+        name: npm-install
+      workspaces:
+        - name: source
+          workspace: source
+
+    - name: tests
+      taskRef:
+        name: jasmine-test
+      runAfter:
+        - npminstall
+      workspaces:
+        - name: source
+          workspace: source
+
+    - name: build
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      runAfter:
+        - tests
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE)
+      workspaces:
+        - name: source
+          workspace: source
